@@ -1,0 +1,41 @@
+name: Hisse analizi
+
+on:
+  workflow_dispatch:
+    inputs:
+      hisse:
+        description: "Hisse kodları, virgülle ayır (ör: THYAO,ASELS,AKBNK)"
+        required: true
+        default: "THYAO"
+      sure:
+        description: "Süre"
+        type: choice
+        options: ["1y", "2y", "3y"]
+        default: "2y"
+      esik:
+        description: "Sert gün eşiği (%)"
+        default: "2"
+
+jobs:
+  analiz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Analizi çalıştır
+        env:
+          HISSE: ${{ inputs.hisse }}
+          SURE: ${{ inputs.sure }}
+          ESIK: ${{ inputs.esik }}
+        run: |
+          python main.py --hisse "$HISSE" --sure "$SURE" --esik "$ESIK" | tee sonuc.txt
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat sonuc.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grafikler-ve-sonuclar
+          path: cikti/
