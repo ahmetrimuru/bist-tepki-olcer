@@ -20,7 +20,7 @@ Cevapladığı soru: **"BIST 100 %1 düştüğünde bu hisse ortalama ne kadar d
 ## Kurulum
 
 ```bash
-git clone https://github.com/KULLANICI_ADI/bist-tepki-olcer.git
+git clone https://github.com/ahmetrimuru/bist-tepki-olcer.git
 cd bist-tepki-olcer
 pip install -r requirements.txt
 ```
