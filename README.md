@@ -17,6 +17,14 @@ Cevapladığı soru: **"BIST 100 %1 düştüğünde bu hisse ortalama ne kadar d
 | Hareketli beta | Son 60 günle hesaplanan, zaman içinde değişen beta |
 | Etiket | Beta < 0,8 Defansif · 0,8–1,2 Endeksle paralel · > 1,2 Agresif |
 
+## Web sayfası
+
+Kurulum gerektirmeden kullanmak için: **https://ahmetrimuru.github.io/bist-tepki-olcer/**
+
+Listeden ya da arama kutusundan hisseyi seçin; beta, düşüş betası, sert gün tepkisi ve grafikler görünür. 1 yıl / 2 yıl arasında geçiş yapılabilir, sütun başlıklarına tıklayarak sıralanabilir. Bir hisseye doğrudan bağlantı vermek için adresin sonuna `#THYAO` gibi kod eklenir.
+
+Sayfa verisi hafta içi her akşam GitHub Actions ile yeniden hesaplanır (`.github/workflows/web_guncelle.yml`). Gösterilen hisseler `data/hisseler.txt` dosyasından okunur; BIST 100 listesi değiştiğinde bu dosya düzenlenir.
+
 ## Kurulum
 
 ```bash

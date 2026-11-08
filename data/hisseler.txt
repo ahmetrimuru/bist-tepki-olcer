@@ -1,0 +1,118 @@
+# Web sayfasında gösterilecek hisseler (her satıra bir kod, .IS yazmayın)
+# Borsa İstanbul BIST 100 listesini her çeyrekte değiştirir.
+# Liste değişince bu dosyayı GitHub'da düzenleyin: satır ekleyin ya da silin.
+# Veri bulunamayan kodlar otomatik atlanır.
+# Son düzenleme: 1 Ekim - 31 Aralık 2026 dönemi esas alındı.
+
+# Bankacılık, sigorta, finans
+AKBNK
+ALBRK
+ANHYT
+GARAN
+HALKB
+ISCTR
+ISMEN
+TSKB
+TURSG
+VAKBN
+YKBNK
+
+# Holdingler
+AGHOL
+ALARK
+BINHO
+DOHOL
+ECZYT
+ENKAI
+GLYHO
+KCHOL
+PAHOL
+SAHOL
+TKFEN
+
+# Sanayi, metal, kimya
+AKSA
+ARCLK
+ASELS
+ASTOR
+BRSAN
+CVKMD
+EGEEN
+EGGUB
+EREGL
+GUBRF
+HEKTS
+ISDMR
+KATMR
+KCAER
+KONTR
+KORDS
+KRDMD
+LMKDC
+PETKM
+SASA
+SISE
+TCKRC
+TRALT
+TRMET
+TUPRS
+VESTL
+
+# Otomotiv
+DOAS
+FROTO
+KARSN
+OTKAR
+TOASO
+TTRAK
+
+# Çimento, inşaat
+AKCNS
+BTCIM
+CIMSA
+EUREN
+GLRMK
+OYAKC
+
+# Enerji
+AHGAZ
+AKFYE
+AKSEN
+AYGAZ
+CANTE
+CWENE
+ENERY
+ENJSA
+ENTRA
+GWIND
+ZOREN
+
+# Perakende, gıda, içecek
+AEFES
+BIMAS
+CCOLA
+MAVI
+MGROS
+SOKM
+TABGD
+ULKER
+
+# Ulaşım
+PGSUS
+RYSAS
+TAVHL
+THYAO
+
+# İletişim
+TCELL
+TTKOM
+
+# Gayrimenkul
+EKGYO
+RGYAS
+SNGYO
+TRGYO
+
+# Sağlık
+ECILC
+MPARK

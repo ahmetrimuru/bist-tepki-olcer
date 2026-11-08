@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BIST 100 Tepki Ölçer</title>
+<meta name="description" content="BIST 100 hisselerinin endeksin yükseliş ve düşüşlerine verdiği tepki: beta, düşüş betası, up/down capture, sert gün analizi.">
+<style>
+  :root { --yazi:#111; --soluk:#666; --cizgi:#ddd; --zemin:#fafafa; --vurgu:#000; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--yazi); background:#fff; line-height:1.5; }
+  .sayfa { max-width:1100px; margin:0 auto; padding:24px 16px 48px; }
+  header h1 { font-size:26px; margin:0 0 4px; letter-spacing:-0.3px; }
+  header p { margin:0; color:var(--soluk); }
+  .bilgi { font-size:13px; color:var(--soluk); margin-top:6px; }
+  .araclar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:22px 0 12px; }
+  input[type=search] { flex:1 1 220px; padding:9px 12px; font-size:15px; border:1px solid #bbb; border-radius:6px; }
+  .secim { display:inline-flex; border:1px solid #bbb; border-radius:6px; overflow:hidden; }
+  .secim button { border:0; background:#fff; padding:9px 14px; font-size:14px; cursor:pointer; }
+  .secim button.aktif { background:var(--vurgu); color:#fff; }
+  .tablo-kap { overflow-x:auto; border:1px solid var(--cizgi); border-radius:8px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th, td { padding:8px 10px; text-align:right; white-space:nowrap; border-bottom:1px solid #eee; }
+  th:first-child, td:first-child { text-align:left; }
+  th { background:var(--zemin); font-weight:600; cursor:pointer; user-select:none; position:sticky; top:0; }
+  th.sirali::after { content:" ↓"; } th.sirali.artan::after { content:" ↑"; }
+  tbody tr { cursor:pointer; } tbody tr:hover { background:#f3f3f3; } tbody tr.secili { background:#eaeaea; }
+  td.kod { font-weight:600; }
+  .etiket { font-size:12px; padding:2px 8px; border:1px solid #999; border-radius:10px; }
+  .etiket.Agresif { background:#222; color:#fff; border-color:#222; }
+  .etiket.Defansif { background:#fff; }
+  .etiket.Endeksle { background:#e6e6e6; border-color:#e6e6e6; }
+  #detay { margin-top:28px; border:1px solid var(--cizgi); border-radius:8px; padding:20px; display:none; }
+  #detay h2 { margin:0 0 2px; font-size:22px; }
+  .kartlar { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin:16px 0; }
+  .kart { border:1px solid #e5e5e5; border-radius:6px; padding:10px 12px; }
+  .kart b { display:block; font-size:20px; }
+  .kart span { font-size:12px; color:var(--soluk); }
+  .yorum { background:var(--zemin); border-left:3px solid #000; padding:10px 14px; margin:12px 0; }
+  .grafikler { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px; }
+  .grafikler h3 { font-size:14px; margin:0 0 6px; }
+  svg { width:100%; height:auto; display:block; }
+  .uyari { font-size:13px; color:#333; border:1px dashed #999; padding:6px 10px; border-radius:6px; margin-top:8px; }
+  section.aciklama { margin-top:36px; font-size:14px; }
+  section.aciklama h2 { font-size:18px; }
+  section.aciklama dt { font-weight:600; margin-top:10px; }
+  section.aciklama dd { margin:2px 0 0; color:#333; }
+  footer { margin-top:36px; font-size:12px; color:var(--soluk); border-top:1px solid var(--cizgi); padding-top:12px; }
+  a { color:inherit; }
+  @media (max-width:760px) { .grafikler { grid-template-columns:1fr; } header h1 { font-size:22px; } }
+</style>
+</head>
+<body>
+<div class="sayfa">
+  <header>
+    <h1>BIST 100 Tepki Ölçer</h1>
+    <p>BIST 100 yükseldiğinde ve düştüğünde hisseler nasıl tepki veriyor?</p>
+    <div class="bilgi" id="bilgi">Veriler yükleniyor…</div>
+  </header>
+
+  <div class="araclar">
+    <input type="search" id="ara" placeholder="Hisse ara (ör. THYAO)" autocomplete="off">
+    <div class="secim" id="donem">
+      <button data-d="1y">1 yıl</button>
+      <button data-d="2y" class="aktif">2 yıl</button>
+    </div>
+  </div>
+
+  <div id="detay"></div>
+
+  <div class="tablo-kap" style="margin-top:16px">
+    <table>
+      <thead><tr>
+        <th data-s="kod">Hisse</th>
+        <th data-s="beta">Beta</th>
+        <th data-s="yukselis_beta">Yükseliş β</th>
+        <th data-s="dusus_beta">Düşüş β</th>
+        <th data-s="up_capture">Up capt.</th>
+        <th data-s="down_capture">Down capt.</th>
+        <th data-s="r2">R²</th>
+        <th data-s="hareketli_beta_son">Son 60g β</th>
+        <th data-s="etiket">Tip</th>
+      </tr></thead>
+      <tbody id="satirlar"></tbody>
+    </table>
+  </div>
+
+  <section class="aciklama">
+    <h2>Ne anlama geliyor?</h2>
+    <dl>
+      <dt>Beta</dt><dd>BIST 100 %1 hareket ettiğinde hissenin ortalama yüzde kaç hareket ettiği. 1,5 ise endeks %1 düşünce hisse ortalama %1,5 düşer.</dd>
+      <dt>Yükseliş β / Düşüş β</dt><dd>Aynı ölçü, yalnızca endeksin yükseldiği ya da düştüğü günler için. Yükseliş betası düşüş betasından büyükse hisse yükselişleri büyütüp düşüşleri yumuşatıyor demektir.</dd>
+      <dt>Up / Down capture</dt><dd>Endeks yükseldiği günlerde hisse yükselişin yüzde kaçını, düştüğü günlerde düşüşün yüzde kaçını yakalamış. Up yüksek, down düşük olması istenir.</dd>
+      <dt>R²</dt><dd>Hissenin hareketlerinin ne kadarının endeksle açıklandığı. 0,6 ise hareketlerin yaklaşık %60'ı endeksten, kalanı şirketin kendi haberlerinden geliyor.</dd>
+      <dt>Sert günler</dt><dd>Endeksin bir günde ±%2'den fazla oynadığı günlerde hissenin ortalama getirisi.</dd>
+      <dt>Tip</dt><dd>Beta 0,8'in altındaysa Defansif, 0,8–1,2 arasında Endeksle paralel, 1,2'nin üstündeyse Agresif.</dd>
+    </dl>
+  </section>
+
+  <footer>
+    Veriler günlük kapanışlardan hesaplanır ve iş günleri akşam otomatik güncellenir. Bu sayfa <b>yatırım tavsiyesi değildir</b>; geçmiş tepkiler gelecekte aynı şekilde tekrarlanmayabilir.
+    · <a href="https://github.com/ahmetrimuru/bist-tepki-olcer">Kaynak kod</a>
+  </footer>
+</div>
+
+<script>
+const D = { ozet: null, donem: "2y", sirala: "beta", artan: false, secili: null, onbellek: {} };
+const $ = s => document.querySelector(s);
+
+function sayi(v, o = 2) {
+  if (v === null || v === undefined || Number.isNaN(v)) return "-";
+  return v.toLocaleString("tr-TR", { minimumFractionDigits: o, maximumFractionDigits: o });
+}
+function yuzde(v, o = 0) { return v === null || v === undefined ? "-" : (v < 0 ? "-%" : "%") + sayi(Math.abs(v), o); }
+function kacir(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+async function yukle() {
+  try {
+    const r = await fetch("data/ozet.json", { cache: "no-cache" });
+    if (!r.ok) throw new Error(r.status);
+    D.ozet = await r.json();
+  } catch (e) {
+    $("#bilgi").textContent = "Veri bulunamadı. GitHub Actions'taki 'Web verisini güncelle' iş akışı henüz çalışmamış olabilir.";
+    return;
+  }
+  const g = new Date(D.ozet.guncelleme);
+  $("#bilgi").textContent = `${D.ozet.hisseler.length} hisse · BIST 100 son kapanış ${sayi(D.ozet.endeks_son)} (${D.ozet.endeks_son_tarih}) · Güncelleme: ${g.toLocaleString("tr-TR", {dateStyle:"medium", timeStyle:"short"})}`;
+  tabloCiz();
+  const k = decodeURIComponent(location.hash.slice(1)).toUpperCase();
+  if (k) detayAc(k, false);
+}
+
+function tabloCiz() {
+  const ara = $("#ara").value.trim().toUpperCase();
+  let liste = D.ozet.hisseler.filter(h => h[D.donem] && h.kod.includes(ara));
+  const s = D.sirala, yon = D.artan ? 1 : -1;
+  liste.sort((a, b) => {
+    const x = s === "kod" ? a.kod : a[D.donem][s], y = s === "kod" ? b.kod : b[D.donem][s];
+    if (x === null) return 1; if (y === null) return -1;
+    return (x > y ? 1 : x < y ? -1 : 0) * yon;
+  });
+  document.querySelectorAll("th").forEach(th => {
+    th.classList.toggle("sirali", th.dataset.s === s);
+    th.classList.toggle("artan", th.dataset.s === s && D.artan);
+  });
+  $("#satirlar").innerHTML = liste.map(h => {
+    const v = h[D.donem];
+    return `<tr data-k="${kacir(h.kod)}" class="${h.kod === D.secili ? "secili" : ""}">
+      <td class="kod">${kacir(h.kod)}</td><td>${sayi(v.beta)}</td><td>${sayi(v.yukselis_beta)}</td><td>${sayi(v.dusus_beta)}</td>
+      <td>${yuzde(v.up_capture)}</td><td>${yuzde(v.down_capture)}</td><td>${sayi(v.r2)}</td><td>${sayi(v.hareketli_beta_son)}</td>
+      <td><span class="etiket ${kacir(v.etiket.split(" ")[0])}">${kacir(v.etiket)}</span></td></tr>`;
+  }).join("") || `<tr><td colspan="9">Sonuç yok.</td></tr>`;
+}
+
+async function detayAc(kod, kaydir = true) {
+  if (!D.ozet.hisseler.some(h => h.kod === kod)) return;
+  D.secili = kod;
+  history.replaceState(null, "", "#" + kod);
+  if (!D.onbellek[kod]) {
+    const r = await fetch(`data/hisse/${encodeURIComponent(kod)}.json`, { cache: "no-cache" });
+    D.onbellek[kod] = await r.json();
+  }
+  detayCiz();
+  tabloCiz();
+  if (kaydir) $("#detay").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function detayCiz() {
+  const v = D.onbellek[D.secili]; if (!v) return;
+  const d = v.donemler[D.donem];
+  const kutu = $("#detay"); kutu.style.display = "block";
+  if (!d) { kutu.innerHTML = `<h2>${kacir(v.kod)}</h2><p>Bu dönem için yeterli veri yok.</p>`; return; }
+  const o = d.ozet;
+  const guven = o.guvenilir ? "" : `<div class="uyari">Sert gün sayısı az (${o.sert_yukselis_gun + o.sert_dusus_gun} gün), bu bölümün güvenilirliği düşük.</div>`;
+  const supheli = o.supheli_gun ? `<div class="uyari">Dönemde ${o.supheli_gun} gün %15'ten büyük hareket var. Bedelsiz/bölünme kaynaklı olabilir, sonuçları dikkatli yorumlayın.</div>` : "";
+  kutu.innerHTML = `
+    <h2>${kacir(v.kod)} <span class="etiket ${kacir(o.etiket.split(" ")[0])}" style="font-size:13px;vertical-align:middle">${kacir(o.etiket)}</span></h2>
+    <div class="bilgi">${o.baslangic} – ${o.bitis} · ${o.gun_sayisi} işlem günü · Son fiyat ${sayi(v.son_fiyat)} TL</div>
+    <div class="yorum">${kacir(o.yorum)}</div>
+    <div class="kartlar">
+      <div class="kart"><b>${sayi(o.beta)}</b><span>Beta</span></div>
+      <div class="kart"><b>${sayi(o.yukselis_beta)}</b><span>Yükseliş betası</span></div>
+      <div class="kart"><b>${sayi(o.dusus_beta)}</b><span>Düşüş betası</span></div>
+      <div class="kart"><b>${yuzde(o.up_capture)}</b><span>Up capture</span></div>
+      <div class="kart"><b>${yuzde(o.down_capture)}</b><span>Down capture</span></div>
+      <div class="kart"><b>${sayi(o.korelasyon)} / ${sayi(o.r2)}</b><span>Korelasyon / R²</span></div>
+      <div class="kart"><b>${yuzde(o.yon_uyumu)}</b><span>Endeksle aynı yön</span></div>
+      <div class="kart"><b>${sayi(o.hareketli_beta_son)}</b><span>Son 60 gün betası</span></div>
+    </div>
+    <div class="kartlar">
+      <div class="kart"><b>${yuzde(o.sert_yukselis_hisse_ort, 2)}</b><span>Endeks ${yuzde(o.sert_yukselis_endeks_ort, 2)} yükseldiğinde (${o.sert_yukselis_gun} sert gün)</span></div>
+      <div class="kart"><b>${yuzde(o.sert_dusus_hisse_ort, 2)}</b><span>Endeks ${yuzde(o.sert_dusus_endeks_ort, 2)} düştüğünde (${o.sert_dusus_gun} sert gün)</span></div>
+    </div>
+    ${guven}${supheli}
+    <div class="grafikler">
+      <div><h3>Günlük getiriler: BIST 100 (yatay) – ${kacir(v.kod)} (dikey)</h3>${dagilimSvg(d.dagilim, o.beta)}</div>
+      <div><h3>60 günlük hareketli beta</h3>${cizgiSvg(d.hareketli_beta)}</div>
+    </div>`;
+}
+
+const G = 420, Y = 300, P = { l: 42, r: 12, t: 12, b: 30 };
+function eksenAdim(min, max, n = 5) {
+  const ham = (max - min) / n, us = Math.pow(10, Math.floor(Math.log10(ham)));
+  const adim = [1, 2, 2.5, 5, 10].map(k => k * us).find(a => a >= ham);
+  const ilk = Math.ceil(min / adim) * adim, out = [];
+  for (let v = ilk; v <= max + 1e-9; v += adim) out.push(+v.toFixed(6));
+  return out;
+}
+function dagilimSvg(noktalar, beta) {
+  const xs = noktalar.map(p => p[0]), ys = noktalar.map(p => p[1]);
+  const xm = Math.max(...xs.map(Math.abs), 1) * 1.05, ym = Math.max(...ys.map(Math.abs), 1) * 1.05;
+  const X = v => P.l + (v + xm) / (2 * xm) * (G - P.l - P.r), Yp = v => P.t + (ym - v) / (2 * ym) * (Y - P.t - P.b);
+  const ort = a => a.reduce((s, v) => s + v, 0) / a.length, mx = ort(xs), my = ort(ys);
+  const kes = my - beta * mx;
+  let s = `<svg viewBox="0 0 ${G} ${Y}" role="img" aria-label="Dağılım grafiği">`;
+  eksenAdim(-xm, xm).forEach(v => s += `<line x1="${X(v)}" x2="${X(v)}" y1="${P.t}" y2="${Y - P.b}" stroke="#eee"/><text x="${X(v)}" y="${Y - 12}" font-size="10" text-anchor="middle" fill="#666">${sayi(v, 0)}</text>`);
+  eksenAdim(-ym, ym).forEach(v => s += `<line x1="${P.l}" x2="${G - P.r}" y1="${Yp(v)}" y2="${Yp(v)}" stroke="#eee"/><text x="${P.l - 6}" y="${Yp(v) + 3}" font-size="10" text-anchor="end" fill="#666">${sayi(v, 0)}</text>`);
+  s += `<line x1="${X(0)}" x2="${X(0)}" y1="${P.t}" y2="${Y - P.b}" stroke="#aaa"/><line x1="${P.l}" x2="${G - P.r}" y1="${Yp(0)}" y2="${Yp(0)}" stroke="#aaa"/>`;
+  noktalar.forEach(p => s += `<circle cx="${X(p[0]).toFixed(1)}" cy="${Yp(p[1]).toFixed(1)}" r="2" fill="#555" fill-opacity="0.55"/>`);
+  if (beta !== null) {
+    const a = -xm, b = xm, ya = Math.max(-ym, Math.min(ym, beta * a + kes)), yb = Math.max(-ym, Math.min(ym, beta * b + kes));
+    const xa = (ya - kes) / beta, xb = (yb - kes) / beta;
+    s += `<line x1="${X(xa)}" y1="${Yp(ya)}" x2="${X(xb)}" y2="${Yp(yb)}" stroke="#000" stroke-width="1.8"/>`;
+    s += `<text x="${P.l + 8}" y="${P.t + 14}" font-size="12" fill="#000">Beta = ${sayi(beta)}</text>`;
+  }
+  return s + `<text x="${G / 2}" y="${Y - 1}" font-size="10" text-anchor="middle" fill="#666">BIST 100 günlük getiri (%)</text></svg>`;
+}
+function cizgiSvg(seri) {
+  if (!seri.length) return "<p>Yeterli veri yok.</p>";
+  const vs = seri.map(p => p[1]);
+  const lo = Math.min(...vs, 1) - 0.1, hi = Math.max(...vs, 1) + 0.1;
+  const X = i => P.l + i / (seri.length - 1) * (G - P.l - P.r), Yp = v => P.t + (hi - v) / (hi - lo) * (Y - P.t - P.b);
+  let s = `<svg viewBox="0 0 ${G} ${Y}" role="img" aria-label="Hareketli beta grafiği">`;
+  eksenAdim(lo, hi).forEach(v => s += `<line x1="${P.l}" x2="${G - P.r}" y1="${Yp(v)}" y2="${Yp(v)}" stroke="#eee"/><text x="${P.l - 6}" y="${Yp(v) + 3}" font-size="10" text-anchor="end" fill="#666">${sayi(v, 1)}</text>`);
+  s += `<line x1="${P.l}" x2="${G - P.r}" y1="${Yp(1)}" y2="${Yp(1)}" stroke="#999" stroke-dasharray="4 3"/>`;
+  const adim = Math.max(1, Math.floor(seri.length / 5));
+  for (let i = 0; i < seri.length - adim / 2; i += adim) s += `<text x="${X(i)}" y="${Y - 10}" font-size="10" text-anchor="${i === 0 ? "start" : "middle"}" fill="#666">${seri[i][0].slice(0, 7)}</text>`;
+  s += `<polyline fill="none" stroke="#000" stroke-width="1.5" points="${seri.map((p, i) => X(i).toFixed(1) + "," + Yp(p[1]).toFixed(1)).join(" ")}"/>`;
+  return s + `</svg>`;
+}
+
+$("#ara").addEventListener("input", () => D.ozet && tabloCiz());
+$("#ara").addEventListener("keydown", e => {
+  if (e.key === "Enter") { const k = $("#ara").value.trim().toUpperCase(); if (k) detayAc(k); }
+});
+$("#donem").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  D.donem = b.dataset.d;
+  document.querySelectorAll("#donem button").forEach(x => x.classList.toggle("aktif", x === b));
+  if (D.ozet) { tabloCiz(); detayCiz(); }
+});
+document.querySelector("thead").addEventListener("click", e => {
+  const th = e.target.closest("th"); if (!th || !D.ozet) return;
+  if (D.sirala === th.dataset.s) D.artan = !D.artan; else { D.sirala = th.dataset.s; D.artan = th.dataset.s === "kod"; }
+  tabloCiz();
+});
+$("#satirlar").addEventListener("click", e => { const tr = e.target.closest("tr[data-k]"); if (tr) detayAc(tr.dataset.k); });
+yukle();
+</script>
+</body>
+</html>
